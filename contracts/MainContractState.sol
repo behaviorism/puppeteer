@@ -8,8 +8,6 @@ error MissingPurchase();
 error ContractLocked();
 
 contract MainContractModule is OwnableUpgradeable {
-    address internal constant subcontractsImplementation = address(0);
-
     bool public locked;
     uint256 public price = 0.05 ether;
 
@@ -33,7 +31,18 @@ contract MainContractModule is OwnableUpgradeable {
         _;
     }
 
+    function getSubcontractImplementation() internal view returns (address) {
+        return address(uint160(uint(keccak256(
+            abi.encodePacked(
+                hex"ff",
+                address(this),
+                uint(0),
+                keccak256(abi.encodePacked(hex"5860208158601c335a63aaf10f428752fa158151803b80938091923cf3"))
+            )
+        ))));
+    }
+
     function getSubcontract(uint256 i) internal view returns (address) {
-        return Clones.predictDeterministicAddress(subcontractsImplementation, keccak256(abi.encodePacked(msg.sender, i)));
+        return Clones.predictDeterministicAddress(getSubcontractImplementation(), keccak256(abi.encodePacked(msg.sender, i)));
     }
 }

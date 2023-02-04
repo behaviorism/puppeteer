@@ -12,7 +12,7 @@ contract Subcontracts is MainContractModule {
             uint256 length = currentCount + amount;
             for (uint256 i = currentCount; i < length; ++i) {
                 Clones.cloneDeterministic(
-                    subcontractsImplementation,
+                    getSubcontractImplementation(),
                     keccak256(abi.encodePacked(msg.sender, i))
                 );
             }

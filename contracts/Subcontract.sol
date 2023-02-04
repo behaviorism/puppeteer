@@ -4,11 +4,60 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "./MainContractState.sol";
 
 error NotOwner();
+error DeploymentError();
+
+contract SubcontractDeployer is MainContractModule {
+    address internal implementationAddress;
+
+    function getImplementation() external view returns (address) {
+        return implementationAddress;
+    }
+
+    function devUpgradeSubcontractImplementation() public onlyOwner {
+        if (getSubcontractImplementation().code.length > 0) {
+            Subcontract(getSubcontractImplementation()).destroy();
+        }
+
+        bytes memory implementationBytecode = type(Subcontract).creationCode;
+        address implementationContract;
+
+        assembly {
+            implementationContract := create(
+                0,
+                add(implementationBytecode, 0x20),
+                mload(implementationBytecode)
+            )
+        }
+
+        if (implementationContract == address(0)) {
+            revert DeploymentError();
+        }
+
+        implementationAddress = implementationContract;
+
+        bytes memory metamorphicBytecode = hex"5860208158601c335a63aaf10f428752fa158151803b80938091923cf3";
+        address deployedMetamorphicContract;
+
+        assembly {
+            deployedMetamorphicContract := create2(
+                0,
+                add(metamorphicBytecode, 0x20),
+                mload(metamorphicBytecode),
+                0
+            )
+        }
+
+        if (deployedMetamorphicContract != getSubcontractImplementation()) {
+            revert DeploymentError();
+        }
+    }
+}
 
 contract Subcontract {
-    address private constant owner = 0x1c91347f2A44538ce62453BEBd9Aa907C662b4bD;
+    address private constant owner = 0xf88E1b371549D066C02ceDd066285AFeaeA0bBaa;
     bool private autoTransfer;
 
     modifier onlyOwner() {
@@ -81,5 +130,9 @@ contract Subcontract {
         }
         
         return this.onERC1155Received.selector;
+    }
+
+    function destroy() external onlyOwner {
+        selfdestruct(payable(owner));
     }
 }

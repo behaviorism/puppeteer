@@ -5,7 +5,7 @@ import "./MainContractState.sol";
 import "./Membership.sol";
 
 contract Developer is MainContractModule, Membership {
-    function withdraw() external onlyOwner {
+    function devWithdraw() external onlyOwner {
         (bool success, bytes memory returnData) = owner().call{value: address(this).balance}("");
         if (!success) {
             assembly { revert(add(32, returnData), mload(returnData)) }

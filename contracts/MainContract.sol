@@ -6,12 +6,13 @@ import "./Withdraws.sol";
 import "./Proxy.sol";
 import "./Developer.sol";
 import "./Membership.sol";
+import "./Subcontract.sol";
 import "./Subcontracts.sol";
 
 error InsufficientSubcontracts();
 error InsufficientPayloads();
 
-contract MainContract is MainContractModule, Membership, Developer, Withdraws, Proxy, Subcontracts {
+contract MainContract is MainContractModule, Membership, Developer, Withdraws, Proxy, Subcontracts, SubcontractDeployer {
     function callSubcontracts(
         address contractAddress,
         uint256 subcontractsAmount,
