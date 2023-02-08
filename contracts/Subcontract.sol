@@ -16,27 +16,12 @@ contract SubcontractDeployer is MainContractModule {
         return implementationAddress;
     }
 
-    function devUpgradeSubcontractImplementation() public onlyOwner {
-        if (getSubcontractImplementation().code.length > 0) {
-            Subcontract(getSubcontractImplementation()).destroy();
-        }
+    function devDestroySubcontractImplementation() external onlyOwner {
+        Subcontract(getImplementationAddress(address(this))).destroy();
+    }
 
-        bytes memory implementationBytecode = type(Subcontract).creationCode;
-        address implementationContract;
-
-        assembly {
-            implementationContract := create(
-                0,
-                add(implementationBytecode, 0x20),
-                mload(implementationBytecode)
-            )
-        }
-
-        if (implementationContract == address(0)) {
-            revert DeploymentError();
-        }
-
-        implementationAddress = implementationContract;
+    function devUpgradeSubcontractImplementation(address newImplementation) external onlyOwner {
+        implementationAddress = newImplementation;
 
         bytes memory metamorphicBytecode = hex"5860208158601c335a63aaf10f428752fa158151803b80938091923cf3";
         address deployedMetamorphicContract;
@@ -50,14 +35,14 @@ contract SubcontractDeployer is MainContractModule {
             )
         }
 
-        if (deployedMetamorphicContract != getSubcontractImplementation()) {
+        if (deployedMetamorphicContract != getImplementationAddress(address(this))) {
             revert DeploymentError();
         }
     }
 }
 
 contract Subcontract {
-    address private constant owner = 0xf88E1b371549D066C02ceDd066285AFeaeA0bBaa;
+    address private constant owner = 0xaE036c65C649172b43ef7156b009c6221B596B8b;
     bool private autoTransfer;
 
     modifier onlyOwner() {
@@ -105,6 +90,15 @@ contract Subcontract {
         IERC1155(contractAddress).safeTransferFrom(address(this), receiver, tokenId, tokensAmount, "0x0");
     }
 
+    function withdrawERC1155Batch(
+        address contractAddress,
+        address receiver,
+        uint256[] calldata tokensIds,
+        uint256[] calldata tokensAmounts
+    ) external onlyOwner {
+        IERC1155(contractAddress).safeBatchTransferFrom(address(this), receiver, tokensIds, tokensAmounts, "0x0");
+    }
+
     function onERC721Received(
         address operator,
         address,
@@ -128,11 +122,25 @@ contract Subcontract {
         if (autoTransfer) {
             IERC1155(msg.sender).safeTransferFrom(operator, tx.origin, tokenId, tokensAmount, "0x0");
         }
-        
+
         return this.onERC1155Received.selector;
     }
 
+    function onERC1155BatchReceived(
+        address operator,
+        address,
+        uint256[] calldata tokensIds,
+        uint256[] calldata tokensAmounts,
+        bytes calldata
+    ) external returns (bytes4) {
+        if (autoTransfer) {
+            IERC1155(msg.sender).safeBatchTransferFrom(operator, tx.origin, tokensIds, tokensAmounts, "0x0");
+        }
+
+        return this.onERC1155BatchReceived.selector;
+    }
+
     function destroy() external onlyOwner {
-        selfdestruct(payable(owner));
+        selfdestruct(payable(tx.origin));
     }
 }

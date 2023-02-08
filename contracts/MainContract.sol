@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
+import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import "./Subcontract.sol";
 import "./Withdraws.sol";
-import "./Proxy.sol";
 import "./Developer.sol";
 import "./Membership.sol";
 import "./Subcontract.sol";
@@ -12,7 +12,24 @@ import "./Subcontracts.sol";
 error InsufficientSubcontracts();
 error InsufficientPayloads();
 
-contract MainContract is MainContractModule, Membership, Developer, Withdraws, Proxy, Subcontracts, SubcontractDeployer {
+contract MainContract is
+    Initializable,
+    UUPSUpgradeable,
+    MainContractModule,
+    Membership,
+    Developer,
+    Withdraws,
+    Subcontracts,
+    SubcontractDeployer
+{
+    function initialize() external initializer {
+        owners.push(msg.sender);
+        isOwner[msg.sender] = true;
+        __Ownable_init();
+    }
+
+    function _authorizeUpgrade(address) internal override onlyOwner {}
+
     function callSubcontracts(
         address contractAddress,
         uint256 subcontractsAmount,
@@ -50,7 +67,6 @@ contract MainContract is MainContractModule, Membership, Developer, Withdraws, P
                     if (revertOnFail) {
                         assembly { revert(add(32, error), mload(error)) }
                     }
-
                     return;
                 }
                 unchecked { ++i; }
@@ -65,7 +81,6 @@ contract MainContract is MainContractModule, Membership, Developer, Withdraws, P
                     if (revertOnFail) {
                         assembly { revert(add(32, error), mload(error)) }
                     }
-
                     return;
                 }
                 unchecked { ++i; }

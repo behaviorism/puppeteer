@@ -31,11 +31,11 @@ contract MainContractModule is OwnableUpgradeable {
         _;
     }
 
-    function getSubcontractImplementation() internal view returns (address) {
+    function getImplementationAddress(address creatorAddress) internal pure returns (address) {
         return address(uint160(uint(keccak256(
             abi.encodePacked(
                 hex"ff",
-                address(this),
+                creatorAddress,
                 uint(0),
                 keccak256(abi.encodePacked(hex"5860208158601c335a63aaf10f428752fa158151803b80938091923cf3"))
             )
@@ -43,6 +43,6 @@ contract MainContractModule is OwnableUpgradeable {
     }
 
     function getSubcontract(uint256 i) internal view returns (address) {
-        return Clones.predictDeterministicAddress(getSubcontractImplementation(), keccak256(abi.encodePacked(msg.sender, i)));
+        return Clones.predictDeterministicAddress(getImplementationAddress(address(this)), keccak256(abi.encodePacked(msg.sender, i)));
     }
 }

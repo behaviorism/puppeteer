@@ -39,18 +39,34 @@ contract Withdraws is MainContractModule {
         }
     }
 
-    function withdrawERC1511(
+    function withdrawERC1155(
         address contractAddress,
         address receiver,
         uint256 tokenId,
-        uint256 tokensPerSubcontract,
+        uint256 tokensAmountPerSubcontract,
         uint256 startingSubcontractIndex,
         uint256 subcontractsAmount
     ) external onlyOwner {
         // startingSubcontractIndex is 1 index based (not 0)
         uint256 startSubcontract = startingSubcontractIndex - 1;
         for (uint256 i = startSubcontract; i < subcontractsAmount;) {
-            Subcontract(getSubcontract(i)).withdrawERC1155(contractAddress, receiver, tokenId, tokensPerSubcontract);
+            Subcontract(getSubcontract(i)).withdrawERC1155(contractAddress, receiver, tokenId, tokensAmountPerSubcontract);
+            unchecked { ++i; }
+        }
+    }
+
+    function withdrawERC1155Batch(
+        address contractAddress,
+        address receiver,
+        uint256[] calldata tokensIds,
+        uint256[] calldata tokensAmountsPerSubcontract,
+        uint256 startingSubcontractIndex,
+        uint256 subcontractsAmount
+    ) external onlyOwner {
+        // startingSubcontractIndex is 1 index based (not 0)
+        uint256 startSubcontract = startingSubcontractIndex - 1;
+        for (uint256 i = startSubcontract; i < subcontractsAmount;) {
+            Subcontract(getSubcontract(i)).withdrawERC1155Batch(contractAddress, receiver, tokensIds, tokensAmountsPerSubcontract);
             unchecked { ++i; }
         }
     }
